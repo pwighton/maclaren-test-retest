@@ -36,7 +36,12 @@ def load_json_file(filename):
         json_data = json.load(infile)
     return json_data
 
-def load_dataset(jsonpath, demofile, drop_subjects=None):
+def load_dataset(jsonpath, demofile, drop_subjects=[], vol_data_src='volume'):
+    
+    if (vol_data_src != 'volume_percent_icv') & (vol_data_src != 'volume'):
+        print('`vol_data_src` must either be "volume" or "volume_percent_icv"')
+        return None
+            
     json_files = find_json_files(jsonpath)
     subject_data = {}
     vol_data = {}
@@ -47,15 +52,14 @@ def load_dataset(jsonpath, demofile, drop_subjects=None):
         subject_data[subname] = load_json_file(file)
         if 'normative' in subject_data[subname] and 'volume' in subject_data[subname]['normative']:
             # Subject was processed without error
-            vol_data[subname] = subject_data[subname]['measurements']['volume_percent_icv']
+            vol_data[subname] = subject_data[subname]['measurements'][vol_data_src]
             norm_data[subname] = {}
             for vol in subject_data[subname]['normative']['volume']:
                 norm_data[subname][vol] = subject_data[subname]['normative']['volume'][vol]['percentiles']['percentile']        
             subject_list.append(subname)
         else:
             # Subject was processed with error
-            if drop_subjects is None:
-                drop_subjects = []
+
             drop_subjects.append(subname)
             print('Ignoring Subject (did it error out?)', subname)
 
