@@ -66,13 +66,10 @@ def load_dataset(jsonpath, demofile, drop_subjects=[], vol_data_src='volume'):
     demo_dataf = pd.read_csv(demofile, sep='\t', index_col='subject_id')
     vol_temp_df = pd.DataFrame.from_dict(data=vol_data, orient='index')
     norm_temp_df = pd.DataFrame.from_dict(data=norm_data, orient='index')
-    if drop_subjects is not None:
-        print('Dropping the following subejcts:', drop_subjects)
-        demo_dataf.drop(drop_subjects, errors='ignore')
-        vol_temp_df.drop(drop_subjects, errors='ignore')
-        norm_temp_df.drop(drop_subjects, errors='ignore')
+
     # for convience, concatenate demographics info onto vol and norm dataframes
-    vol_dataf = pd.concat([demo_dataf,vol_temp_df],axis=1)
-    norm_dataf = pd.concat([demo_dataf,norm_temp_df],axis=1)
+    print('Dropping the following subjects', drop_subjects)
+    vol_dataf = pd.concat([demo_dataf,vol_temp_df],axis=1).drop(drop_subjects, errors='ignore')
+    norm_dataf = pd.concat([demo_dataf,norm_temp_df],axis=1).drop(drop_subjects, errors='ignore')
 
     return vol_dataf, norm_dataf

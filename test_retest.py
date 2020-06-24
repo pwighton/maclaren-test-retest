@@ -51,8 +51,8 @@ def calc_cvs(df, subject_list, session_list, subject_col, session_col, structs_o
         total_cvs = 100 * np.std(subject_level_vals,axis=0)/np.mean(subject_level_vals,axis=0)
         if subject_total_cvs is None:
             subject_total_cvs = total_cvs
-        else:
-            subject_total_cvs = np.stack((subject_total_cvs,total_cvs))
+        else:           
+            subject_total_cvs = np.vstack((subject_total_cvs,total_cvs))
 
         # Compute `subject_session_cvs` according to [1] or eq's 5 and 6 in [2]
         if (method == 'maclaren'):
@@ -126,7 +126,7 @@ def calc_cvs(df, subject_list, session_list, subject_col, session_col, structs_o
         if subject_session_cvs is None:
             subject_session_cvs = session_cvs
         else:
-            subject_session_cvs = np.stack((subject_session_cvs,session_cvs))            
+            subject_session_cvs = np.vstack((subject_session_cvs,session_cvs))            
 
     # We now have:
     # - `subject_session_cvs`: a n x k array of each subject's intra-session coefficient of variation for each 
