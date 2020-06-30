@@ -36,6 +36,25 @@ def load_json_file(filename):
         json_data = json.load(infile)
     return json_data
 
+def add_regions(df,regions):
+    """
+    Given:
+    - a pandas datafram
+    - a list of regions to add together
+      - The first element in the list is a list of regions to add together
+      - The second element in the list is the name of the resulting region
+      - eg: `regions = [ [ ['Right-Amygdala','Left-Amygdala'],'Amygdala'] ]`
+    Produce:
+    - a pandas dataframe with additional colums reulting from adding the regions together as specified
+    """
+    # Specify regions to add together as a list.
+    
+    for region in regions:
+        regions_to_add = region[0]
+        new_region_name = region[1]
+        df[new_region_name] = df[regions_to_add].sum(axis=1)
+    return df
+
 def load_dataset(jsonpath, demofile, drop_subjects=[], vol_data_src='volume'):
     
     if (vol_data_src != 'volume_percent_icv') & (vol_data_src != 'volume'):
