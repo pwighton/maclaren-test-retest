@@ -92,3 +92,86 @@ def load_dataset(jsonpath, demofile, drop_subjects=[], vol_data_src='volume'):
     norm_dataf = pd.concat([demo_dataf,norm_temp_df],axis=1).drop(drop_subjects, errors='ignore')
 
     return vol_dataf, norm_dataf
+
+
+### -------------------------------------------
+# Functions for loading in FreeSurfer data
+
+def load_fs_dataset(statspath, demofile, structs_of_interest, drop_subjects=[]):
+    aseg_stats_files = find_json_files('/home/paul/cmet/data/20200714-maclaren-fs6/','aseg.stats')
+    vol_data = {}
+    for aseg_stats_file in aseg_stats_files:
+        df = get_aseg_stats_dataframe(aseg_stats_file)    
+        # subject name is assumed to be the directory name one level above the location of aseg.stats (FS directory structure)
+        sub_name = os.path.split(os.path.split(os.path.dirname(aseg_stats_file))[0])[1]
+        sub_vol_data = {}
+        for struct in structs_of_interest:
+            sub_vol_data[struct] = float(df[df['StructName']==struct]['Volume_mm3'])
+        vol_data[sub_name] = sub_vol_data
+
+    vol_temp_df = pd.DataFrame.from_dict(data=vol_data, orient='index')
+    demo_dataf = pd.read_csv(demofile, sep='\t', index_col='subject_id')
+
+    # for convience, concatenate demographics info onto vol and norm dataframes
+    print('Dropping the following subjects', drop_subjects)
+    vol_dataf = pd.concat([demo_dataf,vol_temp_df],axis=1).drop(drop_subjects, errors='ignore')
+
+    return vol_dataf
+
+def add_gm_wm_to_dataframe(aseg_dataframe, aseg_stats_file):
+    label_number_dict = {'Left-Cerebral-White-Matter': 2,
+                         'Left-Cerebral-Cortex': 3,
+                         'Right-Cerebral-White-Matter': 41,
+                         'Right-Cerebral-Cortex': 42}
+
+    label_name_dict = {'lhCerebralWhiteMatter': 'Left-Cerebral-White-Matter',
+                       'lhCortex': 'Left-Cerebral-Cortex',
+                       'rhCerebralWhiteMatter': 'Right-Cerebral-White-Matter',
+                       'rhCortex': 'Right-Cerebral-Cortex'}
+
+    def get_volume(line):
+        return float(line.split(',')[-2])
+
+    label_stats = []
+    with open(aseg_stats_file) as f:
+        for line in f:
+            for label in label_name_dict:
+                if label in line:
+                    vol = get_volume(line)
+                    struct = label_name_dict[label]
+                    row = {'SegId': label_number_dict[struct],
+                           'NVoxels': np.nan,
+                           'Volume_mm3': vol,
+                           'StructName': struct,
+                           'normMean': np.nan,
+                           'normStdDev': np.nan,
+                           'normMin': np.nan,
+                           'normMax': np.nan,
+                           'normRange': np.nan}
+                    label_stats.append(row)
+
+    aseg_gm_wm_dataframe = aseg_dataframe.append(label_stats).reset_index(drop=True)
+
+    return aseg_gm_wm_dataframe
+
+def get_aseg_stats_dataframe(aseg_stats_file):
+    column_headers = ['SegId',
+                      'NVoxels',
+                      'Volume_mm3',
+                      'StructName',
+                      'normMean',
+                      'normStdDev',
+                      'normMin',
+                      'normMax',
+                      'normRange']
+
+    aseg_dataframe = pd.read_table(aseg_stats_file,
+                                   delim_whitespace=True,
+                                   header=None,
+                                   comment='#',
+                                   index_col=0,
+                                   names=column_headers)
+
+    aseg_gm_wm_dataframe = add_gm_wm_to_dataframe(aseg_dataframe, aseg_stats_file)
+
+    return aseg_gm_wm_dataframe
