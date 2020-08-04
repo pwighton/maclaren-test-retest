@@ -97,8 +97,8 @@ def load_dataset(jsonpath, demofile, drop_subjects=[], vol_data_src='volume'):
 ### -------------------------------------------
 # Functions for loading in FreeSurfer data
 
-def load_fs_dataset(statspath, demofile, structs_of_interest, drop_subjects=[]):
-    aseg_stats_files = find_json_files('/home/paul/cmet/data/20200714-maclaren-fs6/','aseg.stats')
+def load_fs_dataset(statspath, demofile, structs_of_interest, drop_subjects=[], glob_pattern='aseg.stats'):
+    aseg_stats_files = find_json_files(statspath,glob_pattern)
     vol_data = {}
     for aseg_stats_file in aseg_stats_files:
         df = get_aseg_stats_dataframe(aseg_stats_file)    
@@ -116,6 +116,30 @@ def load_fs_dataset(statspath, demofile, structs_of_interest, drop_subjects=[]):
     print('Dropping the following subjects', drop_subjects)
     vol_dataf = pd.concat([demo_dataf,vol_temp_df],axis=1).drop(drop_subjects, errors='ignore')
 
+    return vol_dataf
+
+def load_fssamseg_dataset(statspath, demofile, structs_of_interest, drop_subjects=[], glob_pattern='samseg.stats'):
+    samseg_stats_files = find_json_files(statspath,glob_pattern)
+    vol_data = {}
+    
+    for filename in samseg_stats_files:
+        # subject name is assumed to be the directory name one level above the location of aseg.stats (FS directory structure)
+        sub_name = os.path.split(os.path.split(os.path.dirname(filename))[0])[1]
+        sub_vol_data = {}
+        with open(filename) as f:
+            for line in f:
+                for struct in structs_of_interest:
+                    if struct in line:
+                        vol = float(line.split(',')[-2])
+                        sub_vol_data[struct] = vol
+        vol_data[sub_name] = sub_vol_data
+    vol_temp_df = pd.DataFrame.from_dict(data=vol_data, orient='index')
+    demo_dataf = pd.read_csv(demofile, sep='\t', index_col='subject_id')
+
+    # for convience, concatenate demographics info onto vol and norm dataframes
+    print('Dropping the following subjects', drop_subjects)
+    vol_dataf = pd.concat([demo_dataf,vol_temp_df],axis=1).drop(drop_subjects, errors='ignore')
+    
     return vol_dataf
 
 def add_gm_wm_to_dataframe(aseg_dataframe, aseg_stats_file):
