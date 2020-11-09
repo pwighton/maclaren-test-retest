@@ -57,7 +57,9 @@ def add_regions(df,regions):
 
 def load_dataset(jsonpath, demofile, drop_subjects=[], vol_data_src='volume'):
     
-    if (vol_data_src != 'volume_percent_icv') & (vol_data_src != 'volume'):
+    if (vol_data_src != 'volume_percent_icv') & \
+       (vol_data_src != 'volume') & \
+       (vol_data_src != 'samseg_volume'):
         print('`vol_data_src` must either be "volume" or "volume_percent_icv"')
         return None
             
